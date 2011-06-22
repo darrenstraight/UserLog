@@ -10,16 +10,12 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Properties;
 
 /**
  * UserLog for Bukkit
@@ -37,6 +33,7 @@ public class UserLog extends JavaPlugin {
     // File shit
     private ArrayList<String> filedUsers;
     private String users = "users.txt";
+    private String usersInfo = "users-info.txt";
     private File folder;
       
     
@@ -44,7 +41,7 @@ public class UserLog extends JavaPlugin {
         folder = getDataFolder();
         filedUsers = new ArrayList<String>();
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvent(Event.Type.PLAYER_LOGIN, playerListener, Priority.Low, this);
+        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
         //Create folders and files
         if (!folder.exists())
@@ -62,6 +59,18 @@ public class UserLog extends JavaPlugin {
             } catch (IOException ex)
             {
                 System.out.println("[UserLog] Users file creation failed.");
+            }
+        }
+        File usersInfoFile = new File(folder.getAbsolutePath() + File.separator + usersInfo);
+        if (!usersInfoFile.exists())
+        {
+            System.out.print("[UserLog] Users information file is missing, creating...");
+            try
+            {
+                usersInfoFile.createNewFile();
+            } catch (IOException ex)
+            {
+                System.out.println("[UserLog] Users information file creation failed.");
             }
         }
         
@@ -145,7 +154,23 @@ public class UserLog extends JavaPlugin {
             writer.close();
             } catch (Exception ex)
             {
-                System.out.println("UserLog] Error: " + ex);
+                System.out.println("[UserLog] Error: " + ex);
+                return false;
+            }
+            return true;
+    }
+    
+    public boolean saveUsersInfo(String player, String time, String ip)
+    {
+        try
+        {
+            BufferedWriter writer = new BufferedWriter(new FileWriter((folder.getAbsolutePath() + File.separator + usersInfo)));
+            writer.write(player + " " + ip + " " + time);
+            writer.newLine();
+            writer.close();
+            } catch (Exception ex)
+            {
+                System.out.println("[UserLog] Error: " + ex);
                 return false;
             }
             return true;

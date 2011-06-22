@@ -1,7 +1,10 @@
 package net.pwncraft.kaikz.userlog;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.bukkit.event.player.PlayerListener;
-import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 /**
  * Handle events for all Player related events
@@ -16,13 +19,21 @@ public class UserLogPlayerListener extends PlayerListener {
     }
 
     @Override
-    public void onPlayerLogin(PlayerLoginEvent event)
+    public void onPlayerJoin(PlayerJoinEvent event)
     {
         String playerName = event.getPlayer().getName();
+        // Normal list
         if (!plugin.isInList(playerName))
         {
             plugin.addUser(playerName);
         }
+        
+        // Info list (IP, time)
+        // Getting the current time
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+        Date date = new Date();
+        String dateString = dateFormat.format(date);
+        String playerIP = event.getPlayer().getAddress().getHostName().toString();
+        plugin.saveUsersInfo(playerName, dateString, playerIP);
     }
 }
-
