@@ -28,9 +28,9 @@ public class UserLogPlayerListener extends PlayerListener {
             plugin.addUser(playerName);
         }
         
-        // Info list (IP, time)
-        // Getting the current time
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+        // Info list (IP, date/time)
+        // Getting the current date and time.
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
         String dateString = dateFormat.format(date);
         String playerIP = event.getPlayer().getAddress().getHostName().toString();

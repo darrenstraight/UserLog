@@ -3,6 +3,7 @@ package net.pwncraft.kaikz.userlog;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.util.HashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
@@ -10,12 +11,18 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.plugin.Plugin;
 
 /**
  * UserLog for Bukkit
@@ -28,28 +35,42 @@ public class UserLog extends JavaPlugin {
     private final HashMap<Player, Boolean> debugees = new HashMap<Player, Boolean>();
     
     // Console logger
-    Logger log = Logger.getLogger("Minecraft");
+    static final Logger log = Logger.getLogger("Minecraft");
+    
+    // Permissions
+    public static PermissionHandler Permissions = null;
     
     // File shit
-    private ArrayList<String> filedUsers;
-    private String users = "users.txt";
-    private String usersInfo = "users-info.txt";
-    private File folder;
-      
+    private static ArrayList<String> filedUsers;
+    private static String users = "users.txt";
+    private static String usersInfo = "users-info.txt";
+    private static File folder;
+    public static File usersFile;
+    public static File usersInfoFile;
     
+    @Override
     public void onEnable() {
         folder = getDataFolder();
         filedUsers = new ArrayList<String>();
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
+        setupPermissions();
+        createFiles();
+        loadUsers();
+        
+        PluginDescriptionFile pdfFile = this.getDescription();
+        log.log(Level.INFO,"[UserLog]" + " v" + pdfFile.getVersion() + "is enabled!");
+    }
+    
+    public void createFiles() {
         //Create folders and files
         if (!folder.exists())
         {
             System.out.print("[UserLog] Data folder missing, creating...");
             folder.mkdir();
         }
-        File usersFile = new File(folder.getAbsolutePath() + File.separator + users);
+        usersFile = new File(folder.getAbsolutePath() + File.separator + users);
         if (!usersFile.exists())
         {
             System.out.print("[UserLog] Users file is missing, creating...");
@@ -58,10 +79,10 @@ public class UserLog extends JavaPlugin {
                 usersFile.createNewFile();
             } catch (IOException ex)
             {
-                System.out.println("[UserLog] Users file creation failed.");
+                System.out.println("[UserLog] Users file creation failed: " + ex);
             }
         }
-        File usersInfoFile = new File(folder.getAbsolutePath() + File.separator + usersInfo);
+        usersInfoFile = new File(folder.getAbsolutePath() + File.separator + usersInfo);
         if (!usersInfoFile.exists())
         {
             System.out.print("[UserLog] Users information file is missing, creating...");
@@ -70,19 +91,27 @@ public class UserLog extends JavaPlugin {
                 usersInfoFile.createNewFile();
             } catch (IOException ex)
             {
-                System.out.println("[UserLog] Users information file creation failed.");
+                System.out.println("[UserLog] Users information file creation failed: " + ex);
             }
         }
+    }
+    
+    private void setupPermissions() {
+        Plugin permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
         
-        loadUsers();
-        
-        PluginDescriptionFile pdfFile = this.getDescription();
-        log.info("[UserLog]" + " v" + pdfFile.getVersion() + " is enabled!");
+        if (UserLog.Permissions == null) {
+            if (permissionsPlugin != null) {
+                UserLog.Permissions = ((Permissions) permissionsPlugin).getHandler();
+            } else {
+                log.info("[UserLog] Permissions system not found. Defaulting to OP.");
+            }
+        }
     }
         
+    @Override
     public void onDisable() {
         PluginDescriptionFile pdfFile = this.getDescription();
-        log.info("[UserLog]" + " v" + pdfFile.getVersion() + " is disabled!");
+        log.log(Level.INFO,"[UserLog]" + " v" + pdfFile.getVersion() + "is disabled!");
     }
     
     public boolean isDebugging(final Player player) {
@@ -97,7 +126,7 @@ public class UserLog extends JavaPlugin {
         debugees.put(player, value);
     }
     
-    public boolean loadUsers()
+    public static boolean loadUsers()
     {
         try
         {
@@ -174,5 +203,30 @@ public class UserLog extends JavaPlugin {
                 return false;
             }
             return true;
+    }
+    
+    @Override
+    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        if (commandLabel.equalsIgnoreCase("userlog")) {
+            Player commandSender = (Player)sender;
+            if (Permissions.has(commandSender, "userlog.admin") || commandSender.isOp() == true) {
+                boolean usersFileDelete = usersFile.delete();
+                boolean usersInfoFileDelete = usersInfoFile.delete();
+                
+                if (usersFileDelete || usersInfoFileDelete) {
+                    commandSender.sendMessage(ChatColor.GREEN + "[UserLog] User data deleted!");
+                    createFiles();
+                    return true;
+                } else {
+                    commandSender.sendMessage(ChatColor.RED + "[UserLog] User data deletion failed!");
+                    createFiles();
+                    return true;
+                }
+            } else {
+                commandSender.sendMessage(ChatColor.RED + "You can't do that!");
+                return true;
+            }
+        }
+        return false;
     }
 }

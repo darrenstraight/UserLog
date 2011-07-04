@@ -1,3 +1,7 @@
 name: UserLog
 main: net.pwncraft.kaikz.userlog.UserLog
-version: 1.1
+version: 1.2
+commands:
+  userlog:
+    description: UserLog admin commands.
+    usage: /<command>
